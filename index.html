@@ -286,7 +286,7 @@ function updateProgress() {
 }
 
 /* ============ 提交 ============ */
-document.getElementById("btnSubmit").addEventListener("click", () => {
+document.getElementById("btnSubmit").addEventListener("click", async () => {
   // 校验
   for (const q of QUESTIONS) {
     if (!q.no) continue;
@@ -305,13 +305,23 @@ document.getElementById("btnSubmit").addEventListener("click", () => {
       other: answers[q.no].other || undefined
     }))
   };
-  // TODO: 接入后端(Cloudflare Worker / Supabase)后改为上传
+  // 上传到 Cloudflare Worker(自动写入 GitHub 仓库 data/ 目录)
+  const API_BASE = "https://survey.lhc886427.workers.dev";
+  try {
+    const res = await fetch(API_BASE + "/record", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    if (!data || !data.ok) console.warn("上传失败:", data);
+  } catch (e) { console.warn("网络上传失败", e); }
+  // 本地留一份备份
   try {
     const list = JSON.parse(localStorage.getItem("survey_responses") || "[]");
     list.push(payload);
     localStorage.setItem("survey_responses", JSON.stringify(list));
   } catch (e) { console.warn("本地保存失败", e); }
-  console.log("问卷数据:", JSON.stringify(payload, null, 2));
 
   document.getElementById("formPage").style.display = "none";
   document.getElementById("submitBar").style.display = "none";
