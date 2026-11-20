@@ -306,7 +306,7 @@ document.getElementById("btnSubmit").addEventListener("click", async () => {
     }))
   };
   // 上传到 Cloudflare Worker(自动写入 GitHub 仓库 data/ 目录)
-  const API_BASE = "https://survey.lhc886427.workers.dev";
+  const API_BASE = "https://survey.wayxyl.icu";
   try {
     const res = await fetch(API_BASE + "/record", {
       method: "POST",
