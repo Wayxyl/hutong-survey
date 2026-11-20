@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex,nofollow">
+<title>问卷数据统计后台</title>
+<style>
+  :root {
+    --primary: #b4552d;
+    --primary-dark: #8f3f1e;
+    --bg: #f7f3ee;
+    --card: #fffdfb;
+    --text: #2e2a26;
+    --muted: #8a8078;
+    --line: #e8ded3;
+    --ok: #3f8f5f;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    font-size: 15px;
+  }
+  .wrap { max-width: 900px; margin: 0 auto; padding: 20px 16px 60px; }
+
+  /* 登录 */
+  #loginPage {
+    min-height: 100vh;
+    display: flex; align-items: center; justify-content: center;
+    padding: 24px;
+  }
+  .login-card {
+    background: var(--card); border: 1px solid var(--line); border-radius: 16px;
+    padding: 28px 24px; width: 100%; max-width: 380px;
+    box-shadow: 0 4px 24px rgba(120,90,60,.08);
+  }
+  .login-card h1 { font-size: 20px; margin: 0 0 6px; }
+  .login-card p { color: var(--muted); font-size: 13px; margin: 0 0 20px; }
+  input[type=password] {
+    width: 100%; padding: 12px 14px; font-size: 15px;
+    border: 1px solid var(--line); border-radius: 10px; background: #fff;
+    outline: none; margin-bottom: 14px;
+  }
+  input[type=password]:focus { border-color: var(--primary); }
+  .btn {
+    width: 100%; padding: 13px; font-size: 15px; font-weight: 600;
+    background: var(--primary); color: #fff; border: none; border-radius: 10px;
+    cursor: pointer;
+  }
+  .btn:active { background: var(--primary-dark); }
+  .err { color: #c0392b; font-size: 13px; margin-top: 10px; min-height: 18px; }
+
+  /* 顶部 */
+  header { padding: 18px 0 10px; border-bottom: 1px solid var(--line); margin-bottom: 20px; }
+  header h1 { font-size: 20px; margin: 0 0 4px; }
+  header .sub { color: var(--muted); font-size: 13px; }
+  .toolbar { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 14px; }
+  .toolbar button {
+    padding: 8px 14px; font-size: 13px; border-radius: 8px; cursor: pointer;
+    border: 1px solid var(--line); background: var(--card); color: var(--text);
+  }
+  .toolbar button:hover { border-color: var(--primary); color: var(--primary); }
+
+  /* 概览卡片 */
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 22px; }
+  .card {
+    background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px;
+  }
+  .card .label { font-size: 12px; color: var(--muted); }
+  .card .val { font-size: 24px; font-weight: 700; color: var(--primary); line-height: 1.3; }
+  .card .val.small { font-size: 14px; font-weight: 600; color: var(--text); }
+
+  /* 题目区块 */
+  .qblock {
+    background: var(--card); border: 1px solid var(--line); border-radius: 12px;
+    padding: 16px; margin-bottom: 14px;
+  }
+  .qblock h3 { font-size: 15px; margin: 0 0 4px; line-height: 1.5; }
+  .qmeta { font-size: 12px; color: var(--muted); margin-bottom: 12px; }
+  .qmeta .tag {
+    display: inline-block; padding: 1px 7px; border-radius: 5px;
+    background: #f2e7dc; color: var(--primary-dark); font-size: 11px; margin-right: 6px;
+  }
+  .bar-row { margin-bottom: 9px; }
+  .bar-head { display: flex; justify-content: space-between; gap: 10px; font-size: 13px; margin-bottom: 3px; }
+  .bar-head .opt { flex: 1; }
+  .bar-head .num { color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .bar-track { height: 8px; background: #f0e8df; border-radius: 4px; overflow: hidden; }
+  .bar-fill { height: 100%; background: var(--primary); border-radius: 4px; transition: width .5s ease; }
+  .bar-fill.low { background: #d8bda8; }
+
+  /* 其他文本 */
+  .other-list { margin-top: 12px; border-top: 1px dashed var(--line); padding-top: 10px; }
+  .other-list .t { font-size: 12px; color: var(--muted); margin-bottom: 6px; }
+  .other-item {
+    font-size: 13px; padding: 7px 10px; background: #fdf8f3;
+    border-left: 3px solid var(--primary); border-radius: 4px; margin-bottom: 6px;
+    word-break: break-word;
+  }
+
+  /* 每日趋势 */
+  .trend { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 16px; margin-bottom: 22px; }
+  .trend h3 { font-size: 15px; margin: 0 0 12px; }
+  #trendChart { width: 100%; height: 160px; display: block; }
+
+  .section-title {
+    font-size: 13px; font-weight: 700; color: var(--primary-dark);
+    letter-spacing: .04em; margin: 26px 0 12px; padding-left: 10px;
+    border-left: 3px solid var(--primary);
+  }
+  .empty { text-align: center; color: var(--muted); padding: 60px 20px; font-size: 14px; }
+  .loading { text-align: center; color: var(--muted); padding: 50px 20px; }
+  .spinner {
+    width: 28px; height: 28px; border: 3px solid #e8ded3; border-top-color: var(--primary);
+    border-radius: 50%; animation: spin .8s linear infinite; margin: 0 auto 14px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+
+<div id="loginPage">
+  <div class="login-card">
+    <h1>数据统计后台</h1>
+    <p>请输入管理口令查看问卷统计</p>
+    <input type="password" id="keyInput" placeholder="管理口令" autocomplete="current-password">
+    <button class="btn" id="loginBtn">进入后台</button>
+    <div class="err" id="loginErr"></div>
+  </div>
+</div>
+
+<div class="wrap" id="dashPage" style="display:none">
+  <header>
+    <h1>问卷数据统计</h1>
+    <div class="sub" id="subInfo">加载中…</div>
+    <div class="toolbar">
+      <button id="refreshBtn">刷新数据</button>
+      <button id="csvBtn">导出 CSV</button>
+      <button id="logoutBtn">退出</button>
+    </div>
+  </header>
+  <div id="content"></div>
+</div>
+
+<script>
+/* ============ 配置 ============ */
+const API_BASE = "https://survey.wayxyl.icu";
+const KEY_STORE = "survey_admin_key";
+
+/* ============ 题库(与 index.html 一致,用于显示选项文字) ============ */
+const LETTERS = "ABCDEFGH";
+const QUESTIONS = [
+  { sec: "第一部分 · 基本信息" },
+  { no:1, type:"single", title:"您的年龄属于哪一组？", options:["18岁以下","18–29岁","30–44岁","45–59岁","60–74岁","75岁及以上","不愿说明"] },
+  { no:2, type:"single", title:"您目前的主要身份是？", options:["在校学生","企业、公司或机关事业单位员工","个体工商户、创业者或自由职业者","退休人员","暂无工作或其他","不愿说明"] },
+  { no:3, type:"single", title:"您与胡同的关系最接近哪一项？", options:["长期住在胡同或附近社区","在胡同工作、经营或提供服务","经常去胡同休闲、购物或参观","很少或没有去过胡同","其他或说不清"] },
+  { no:4, type:"single", title:"您平均多久去一次胡同？", options:["几乎每天","每周至少一次","每月至少一次","每年数次","很少或从未去过"] },
+  { no:5, type:"single", title:"您对“胡同更新”了解多少？", options:["完全不了解","听说过，但不太了解","了解一些","比较了解","非常了解"] },
+  { sec: "第二部分 · 胡同更新的期待与担忧" },
+  { no:6, type:"multi", max:3, title:"您认为胡同更新最应该做到什么？", options:["保留老房子、老院子和历史记忆","改善居民住房、生活设施和日常便利","增加就业，支持小店经营","增加绿地、步道和休息空间","改善交通、停车和消防安全","让居民更多参与社区事务","其他"] },
+  { no:7, type:"multi", max:3, title:"您最希望胡同里出现哪些类型的商户？", options:["菜店、药店、维修店等生活服务","本地小吃店、传统手艺店","书店、咖啡店、社区文化空间","文化创意小店、手工体验店","民宿、短租空间","连锁餐饮店、品牌商店","工作室、共享办公空间","其他"] },
+  { no:8, type:"multi", max:3, title:"哪些商户经营带来的影响，是您最不能接受的？", options:["夜里太吵，影响居民休息","房租上涨，原住民或小商户被迫搬走","垃圾、油烟、噪声或货车占道","改动院墙、门窗、砖木结构，破坏老胡同的样子","便宜的生活服务被高价旅游消费取代","店铺越来越像，缺少本地特色","挤占居民走路、休息和活动的空间","其他"] },
+  { sec: "第三部分 · 商户经营与成本分担" },
+  { no:9, type:"single", title:"老院落小店装修后租金上涨，商户怎样做最合理？", options:["适当提高商品或服务价格，逐步收回装修成本","保留必要的文化特色，价格小幅上涨，同时继续服务居民","优先挣钱，减少文化保护和社区服务投入","如果赚不到钱就退出，把房子租给愿意出高价的人","由商户、房东、政府和居民一起商量成本和收益怎么分担","说不清，要看具体情况"] },
+  { no:10, type:"single", title:"您最多愿意为同类商品或服务多付多少钱？", options:["不愿意多付","5%以内","6%–10%","11%–20%","20%以上","要看具体服务是否可信"] },
+  { no:11, type:"multi", max:3, title:"保护文化和服务居民增加成本，应由谁一起分担？", options:["商户自己承担，通过提高产品和服务质量来消化","房东少收一点租金","政府给补贴、减税或低息贷款","消费者接受合理涨价","社区基金或商户互助组织提供支持","不应该增加这些成本，应少做相关项目","说不清"] },
+  { no:12, type:"multi", max:3, title:"您认为胡同商户还应对社区承担哪些责任？", options:["保护老建筑、老院子和胡同文化","少影响居民休息和日常生活","做好垃圾分类，减少油烟和噪声","为附近居民提供方便、价格合理的生活服务","招聘和善待员工，尽量使用本地劳动力","公开经营信息，认真处理投诉","说不清，商户只要合法经营就可以"] },
+  { sec: "第四部分 · ESG 认知与期待" },
+  { no:13, type:"single", title:"您是否听说过“ESG”？", options:["完全没听说过","听说过，但不了解","大致了解","比较了解","非常了解"] },
+  { no:14, type:"multi", max:3, title:"您最看重哪些环境（E）做法？", options:["节约用水用电","做好垃圾分类，减少一次性用品","减少油烟、噪声和装修污染","减少货车进出和运输带来的拥堵","少浪费装修材料，尽量重复利用","增加绿植，减少地面硬化","不太关注"] },
+  { no:15, type:"multi", max:3, title:"您最看重哪些社会责任（S）做法？", options:["保护老建筑、老院子和胡同文化","不打扰居民休息，保持门前和通道整洁","为老人、儿童和行动不便者提供方便","提供价格合理、居民日常需要的商品和服务","善待员工，按时发工资，保障休息","招聘本地居民，支持社区活动","不太关注"] },
+  { no:16, type:"multi", max:3, title:"您最看重哪些治理（G）做法？", options:["明码标价，按规定经营","公开卫生、消防、环保等检查信息","对居民投诉及时回应，并说明处理结果","涉及装修、外摆、营业时间时，先和居民商量","加入商户自律组织，接受同行监督","请独立第三方定期评价","不太关注"] },
+  { no:17, type:"multi", max:3, title:"小商户做好 ESG 的主要困难是什么？", options:["改造和日常运营成本太高","不知道具体该怎么做，缺少简单好用的办法","店里人少，没有时间记录和管理","租期短，担心投入后收不回来","顾客和居民不愿为这些投入多付钱","担心被说成“只做表面功夫”","缺少政策支持和稳定预期","说不清"] },
+  { no:18, type:"multi", max:3, title:"判断商户是否真正负责任，您最相信哪些信息？", options:["自己到店看到的卫生、环境和服务","居民、朋友或邻居的评价","商户公开的承诺和整改记录","政府或社区公布的检查结果","新闻媒体或网络平台的评价","第三方机构或行业组织的评价","说不清"] },
+  { no:19, type:"multi", max:3, title:"您愿意怎样支持兼顾文化、居民和环境的商户？", options:["优先去消费，推荐给别人","接受合理范围内的涨价","参加社区活动或志愿服务","把居民意见反馈给商户","参加公开评议或监督","目前不愿参与","说不清"] },
+  { no:20, type:"multi", max:3, title:"哪些办法有助于居民参与监督？", options:["商户公开服务承诺和处理结果","居民代表参加商户入驻和改造评审","政府或社区定期公布检查与整改情况","建立方便好用的投诉和反馈渠道","商户之间互相评议、自我管理","请独立第三方定期评价","说不清"] },
+  { sec: "第五部分 · 总体看法" },
+  { no:21, type:"single", title:"胡同更新中“商户赚钱”和“保护文化、照顾居民”可以兼顾吗？", options:["完全可以兼顾","多数情况下可以兼顾","要看具体项目","比较难兼顾","很难兼顾","说不清"] },
+  { no:22, type:"single", title:"您是否同意“商户入驻或改造前应先听取居民意见”？", options:["非常同意","比较同意","一般","不太同意","很不同意","说不清"] },
+];
+
+/* ============ 状态 ============ */
+let ADMIN_KEY = "";
+let RAW = [];
+
+/* ============ 登录 ============ */
+const loginPage = document.getElementById("loginPage");
+const dashPage = document.getElementById("dashPage");
+const keyInput = document.getElementById("keyInput");
+const loginErr = document.getElementById("loginErr");
+
+async function tryLogin(key) {
+  loginErr.textContent = "";
+  document.getElementById("loginBtn").textContent = "验证中…";
+  try {
+    const res = await fetch(`${API_BASE}/data?key=${encodeURIComponent(key)}`);
+    const data = await res.json();
+    if (res.status === 401 || !data.ok) {
+      loginErr.textContent = "口令错误，请重试";
+      document.getElementById("loginBtn").textContent = "进入后台";
+      return false;
+    }
+    ADMIN_KEY = key;
+    localStorage.setItem(KEY_STORE, key);
+    RAW = data.responses || [];
+    loginPage.style.display = "none";
+    dashPage.style.display = "block";
+    render();
+    return true;
+  } catch (e) {
+    loginErr.textContent = "网络错误，请检查网络或稍后重试";
+    document.getElementById("loginBtn").textContent = "进入后台";
+    return false;
+  }
+}
+
+document.getElementById("loginBtn").addEventListener("click", () => {
+  const k = keyInput.value.trim();
+  if (!k) { loginErr.textContent = "请输入口令"; return; }
+  tryLogin(k);
+});
+keyInput.addEventListener("keydown", e => {
+  if (e.key === "Enter") document.getElementById("loginBtn").click();
+});
+
+/* ============ 渲染 ============ */
+function render() {
+  const c = document.getElementById("content");
+
+  if (!RAW.length) {
+    document.getElementById("subInfo").textContent = "暂无答卷";
+    c.innerHTML = '<div class="empty">还没有收到任何答卷。<br>把问卷链接发出去，收到答卷后这里会自动统计。</div>';
+    return;
+  }
+
+  const times = RAW.map(r => r.submittedAt).filter(Boolean).sort();
+  const first = times[0] ? fmtDate(times[0]) : "—";
+  const last = times[times.length - 1] ? fmtDate(times[times.length - 1]) : "—";
+  document.getElementById("subInfo").textContent =
+    `共 ${RAW.length} 份 · 最早 ${first} · 最新 ${last}`;
+
+  // 概览
+  let html = `<div class="cards">
+    <div class="card"><div class="label">答卷总数</div><div class="val">${RAW.length}</div></div>
+    <div class="card"><div class="label">最早提交</div><div class="val small">${first}</div></div>
+    <div class="card"><div class="label">最新提交</div><div class="val small">${last}</div></div>
+  </div>`;
+
+  // 每日趋势
+  const daily = groupByDay(RAW);
+  html += `<div class="trend"><h3>每日提交量</h3><canvas id="trendChart"></canvas></div>`;
+
+  // 逐题统计
+  let currentSec = "";
+  for (const q of QUESTIONS) {
+    if (q.sec) { currentSec = q.sec; continue; }
+    html += renderQuestion(q);
+  }
+
+  c.innerHTML = html;
+  drawTrend(daily);
+}
+
+function renderQuestion(q) {
+  // 收集该题所有答卷
+  const picks = [];
+  const others = [];
+  for (const r of RAW) {
+    const a = (r.answers || []).find(x => Number(x.no) === q.no);
+    if (!a) continue;
+    (a.choices || []).forEach(letter => {
+      const idx = LETTERS.indexOf(letter);
+      if (idx >= 0 && idx < q.options.length) picks.push(idx);
+    });
+    if (a.other && String(a.other).trim()) others.push(String(a.other).trim());
+  }
+
+  const answered = RAW.filter(r => (r.answers || []).some(x => Number(x.no) === q.no)).length;
+  const counts = new Array(q.options.length).fill(0);
+  picks.forEach(i => counts[i]++);
+
+  // 排序:按人数降序(保留原顺序作为并列时的次序)
+  const order = counts.map((v, i) => ({ v, i }))
+    .sort((a, b) => b.v - a.v || a.i - b.i);
+
+  const base = q.type === "single" ? answered : answered; // 单选按人数,多选按人数做分母
+  const max = Math.max(...counts, 1);
+
+  let rows = "";
+  for (const { v, i } of order) {
+    const pct = base ? (v / base * 100) : 0;
+    const w = max ? (v / max * 100) : 0;
+    rows += `<div class="bar-row">
+      <div class="bar-head">
+        <span class="opt">${LETTERS[i]}. ${escapeHtml(q.options[i])}</span>
+        <span class="num">${v} 人 · ${pct.toFixed(1)}%</span>
+      </div>
+      <div class="bar-track"><div class="bar-fill${v === 0 ? ' low' : ''}" style="width:${w}%"></div></div>
+    </div>`;
+  }
+
+  const tag = q.type === "single" ? "单选" : `多选 最多${q.max}项`;
+  let otherHtml = "";
+  if (others.length) {
+    otherHtml = `<div class="other-list"><div class="t">“其他”填写内容（${others.length} 条）</div>` +
+      others.map(t => `<div class="other-item">${escapeHtml(t)}</div>`).join("") + `</div>`;
+  }
+
+  return `<div class="qblock">
+    <h3>${q.no}. ${escapeHtml(q.title)}</h3>
+    <div class="qmeta"><span class="tag">${tag}</span>答题人数 ${answered} 人${q.type === "multi" ? " · 每人可多选，百分比合计可超过 100%" : ""}</div>
+    ${rows}
+    ${otherHtml}
+  </div>`;
+}
+
+/* ============ 每日趋势图 ============ */
+function groupByDay(list) {
+  const map = {};
+  for (const r of list) {
+    if (!r.submittedAt) continue;
+    const d = String(r.submittedAt).slice(0, 10);
+    map[d] = (map[d] || 0) + 1;
+  }
+  return Object.entries(map).sort((a, b) => a[0].localeCompare(b[0]));
+}
+
+function drawTrend(daily) {
+  const canvas = document.getElementById("trendChart");
+  if (!canvas) return;
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.getBoundingClientRect();
+  canvas.width = rect.width * dpr;
+  canvas.height = rect.height * dpr;
+  const ctx = canvas.getContext("2d");
+  ctx.scale(dpr, dpr);
+
+  const W = rect.width, H = rect.height;
+  const padL = 34, padR = 8, padT = 10, padB = 26;
+  const cw = W - padL - padR, ch = H - padT - padB;
+
+  ctx.clearRect(0, 0, W, H);
+
+  if (!daily.length) {
+    ctx.fillStyle = "#8a8078";
+    ctx.font = "13px sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText("暂无数据", W / 2, H / 2);
+    return;
+  }
+
+  const maxV = Math.max(...daily.map(d => d[1]), 1);
+  const n = daily.length;
+  const barW = Math.min(38, cw / n * 0.6);
+  const step = n > 1 ? cw / n : cw;
+
+  // 网格与 y 轴
+  ctx.strokeStyle = "#efe6dc";
+  ctx.fillStyle = "#a89d93";
+  ctx.font = "11px sans-serif";
+  ctx.textAlign = "right";
+  ctx.lineWidth = 1;
+  const ticks = 4;
+  for (let i = 0; i <= ticks; i++) {
+    const y = padT + ch - (ch * i / ticks);
+    ctx.beginPath();
+    ctx.moveTo(padL, y);
+    ctx.lineTo(W - padR, y);
+    ctx.stroke();
+    ctx.fillText(String(Math.round(maxV * i / ticks)), padL - 6, y + 4);
+  }
+
+  // 柱子
+  daily.forEach((d, i) => {
+    const v = d[1];
+    const h = ch * (v / maxV);
+    const x = padL + step * i + (step - barW) / 2;
+    const y = padT + ch - h;
+    const grad = ctx.createLinearGradient(0, y, 0, padT + ch);
+    grad.addColorStop(0, "#c96b40");
+    grad.addColorStop(1, "#b4552d");
+    ctx.fillStyle = grad;
+    const r = Math.min(4, barW / 2, h);
+    ctx.beginPath();
+    ctx.moveTo(x, padT + ch);
+    ctx.lineTo(x, y + r);
+    ctx.quadraticCurveTo(x, y, x + r, y);
+    ctx.lineTo(x + barW - r, y);
+    ctx.quadraticCurveTo(x + barW, y, x + barW, y + r);
+    ctx.lineTo(x + barW, padT + ch);
+    ctx.closePath();
+    ctx.fill();
+
+    // 数值
+    if (v > 0) {
+      ctx.fillStyle = "#8f3f1e";
+      ctx.font = "11px sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText(String(v), x + barW / 2, y - 4);
+    }
+
+    // x 轴标签(日期,太多时隔一个显示)
+    if (n <= 8 || i % Math.ceil(n / 8) === 0) {
+      ctx.fillStyle = "#a89d93";
+      ctx.font = "10px sans-serif";
+      ctx.textAlign = "center";
+      const label = d[0].slice(5); // MM-DD
+      ctx.fillText(label, x + barW / 2, H - 8);
+    }
+  });
+}
+
+/* ============ 工具 ============ */
+function fmtDate(iso) {
+  try {
+    const d = new Date(iso);
+    const p = n => String(n).padStart(2, "0");
+    return `${d.getMonth() + 1}月${d.getDate()}日 ${p(d.getHours())}:${p(d.getMinutes())}`;
+  } catch (e) { return String(iso).slice(0, 16); }
+}
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, m => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[m]));
+}
+
+/* ============ 导出 CSV ============ */
+function exportCsv() {
+  if (!RAW.length) { alert("暂无数据"); return; }
+  const qs = QUESTIONS.filter(q => q.no);
+  const header = ["提交时间", ...qs.map(q => `Q${q.no}`)];
+  const rows = RAW.map(r => {
+    const cells = [r.submittedAt || ""];
+    for (const q of qs) {
+      const a = (r.answers || []).find(x => Number(x.no) === q.no);
+      let val = a ? (a.choices || []).join(",") : "";
+      if (a && a.other) val += ` [其他:${a.other}]`;
+      cells.push(val);
+    }
+    return cells;
+  });
+  const csv = [header, ...rows]
+    .map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(","))
+    .join("\r\n");
+
+  // 加 BOM 让 Excel 正确识别中文
+  const blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `问卷数据_${new Date().toISOString().slice(0, 10)}.csv`;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 3000);
+}
+
+/* ============ 按钮 ============ */
+document.getElementById("refreshBtn").addEventListener("click", async () => {
+  const btn = document.getElementById("refreshBtn");
+  btn.textContent = "刷新中…";
+  await tryLogin(ADMIN_KEY);
+  btn.textContent = "刷新数据";
+});
+document.getElementById("csvBtn").addEventListener("click", exportCsv);
+document.getElementById("logoutBtn").addEventListener("click", () => {
+  localStorage.removeItem(KEY_STORE);
+  location.reload();
+});
+
+/* ============ 自动登录 ============ */
+const saved = localStorage.getItem(KEY_STORE);
+if (saved) {
+  keyInput.value = saved;
+  tryLogin(saved);
+}
+</script>
+</body>
+</html>
